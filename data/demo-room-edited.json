@@ -1,0 +1,64 @@
+{
+  "id": "demo-room",
+  "originalId": "demo",
+  "title": "演示房间",
+  "description": "这是一个演示用的跑团记录",
+  "lastUpdated": "2024-01-15T10:30:00Z",
+  "messageCount": 3,
+  "originalMessageCount": 3,
+  "messages": [
+    {
+      "id": "msg1",
+      "createTime": "2024-01-15T08:00:00Z",
+      "updateTime": "2024-01-15T08:00:00Z",
+      "character": {
+        "name": "柑",
+        "color": "#e67e22",
+        "from": "GM"
+      },
+      "content": "欢迎来到我的TRPG世界！这是一个演示房间。",
+      "type": "text",
+      "channel": "main",
+      "isEdited": false,
+      "isPrivate": false,
+      "dice": null
+    },
+    {
+      "id": "msg2",
+      "createTime": "2024-01-15T08:01:00Z",
+      "updateTime": "2024-01-15T08:01:00Z",
+      "character": {
+        "name": "玩家A",
+        "color": "#3498db",
+        "from": "player1"
+      },
+      "content": "收到！我已经准备好开始冒险了。",
+      "type": "text",
+      "channel": "main",
+      "isEdited": false,
+      "isPrivate": false,
+      "dice": null
+    },
+    {
+      "id": "msg3",
+      "createTime": "2024-01-15T08:02:00Z",
+      "updateTime": "2024-01-15T08:02:00Z",
+      "character": {
+        "name": "玩家B",
+        "color": "#9b59b6",
+        "from": "player2"
+      },
+      "content": "让我来投个侦察检定！",
+      "type": "text",
+      "channel": "main",
+      "isEdited": false,
+      "isPrivate": false,
+      "dice": {
+        "result": "(1D20) ＞ 15",
+        "success": true,
+        "critical": false,
+        "fumble": false
+      }
+    }
+  ]
+}

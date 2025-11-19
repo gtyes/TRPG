@@ -13,16 +13,37 @@ class BlogViewer {
     }
 
     // 加载房间列表
-    async loadRoomsList() {
-        try {
-            const response = await fetch('data/rooms.json');
-            if (!response.ok) throw new Error('无法加载房间列表');
-            this.rooms = await response.json();
-        } catch (error) {
-            console.error('加载房间列表失败:', error);
-            this.rooms = [];
+// 在 loadRoomsList 方法中添加更详细的错误处理
+async loadRoomsList() {
+    try {
+        console.log('开始加载房间列表...');
+        const response = await fetch('data/rooms.json');
+        console.log('响应状态:', response.status);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP错误: ${response.status}`);
         }
+        
+        const data = await response.json();
+        console.log('加载到的数据:', data);
+        this.rooms = data;
+        
+    } catch (error) {
+        console.error('加载房间列表失败:', error);
+        // 显示友好的错误信息
+        const container = document.getElementById('roomsContainer');
+        if (container) {
+            container.innerHTML = `
+                <div class="error-message">
+                    <h3>加载失败</h3>
+                    <p>${error.message}</p>
+                    <p>请检查 data/rooms.json 文件是否存在且格式正确</p>
+                </div>
+            `;
+        }
+        this.rooms = [];
     }
+}
 
     // 显示房间网格
     displayRooms() {
@@ -113,22 +134,27 @@ class BlogViewer {
     }
 
     // 创建消息HTML
-    createMessageHTML(message) {
-        const time = new Date(message.createTime).toLocaleString('zh-CN');
-        
-        return `
-            <div class="message">
-                <div class="message-header">
-                    <span class="character-name" style="color: ${message.character.color || '#666'}">
-                        ${message.character.name}
-                    </span>
-                    <span class="message-time">${time}</span>
-                </div>
-                <div class="message-content">${this.escapeHTML(message.content)}</div>
-                ${message.dice ? `<div class="dice-result">${message.dice.result}</div>` : ''}
+createMessageHTML(message) {
+    const time = new Date(message.createTime).toLocaleString('zh-CN');
+    
+    // 确保所有必需的字段都有值
+    const characterName = message.character?.name || '未知';
+    const characterColor = message.character?.color || '#666';
+    const content = message.content || '';
+    
+    return `
+        <div class="message">
+            <div class="message-header">
+                <span class="character-name" style="color: ${characterColor}">
+                    ${characterName}
+                </span>
+                <span class="message-time">${time}</span>
             </div>
-        `;
-    }
+            <div class="message-content">${this.escapeHTML(content)}</div>
+            ${message.dice ? `<div class="dice-result">🎲 ${message.dice.result || '骰子结果'}</div>` : ''}
+        </div>
+    `;
+}
 
     // 简单路由
     setupRouting() {
