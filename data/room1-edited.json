@@ -1,8 +1,8 @@
 {
   "id": "room1",
   "originalId": "eG8plUUSc",
-  "title": " 第一个房间",
-  "description": "示例示例",
+  "title": "星海漫游者 - 第一次任务",
+  "description": "在星际边缘的冒险故事，探索未知星系",
   "lastUpdated": "2024-01-15T10:30:00Z",
   "messageCount": 245,
   "originalMessageCount": 250,
@@ -16,7 +16,7 @@
         "color": "#e67e22",
         "from": "GM"
       },
-      "content": "欢迎，示例。",
+      "content": "欢迎来到星海漫游者！你们是一支精英太空探险队，正准备执行第一次任务。",
       "type": "text",
       "channel": "main",
       "isEdited": false,
@@ -32,7 +32,7 @@
         "color": "#3498db",
         "from": "player1"
       },
-      "content": "你好，示例。",
+      "content": "收到！船长，我们已经准备好出发了。",
       "type": "text", 
       "channel": "main",
       "isEdited": false,
