@@ -1,0 +1,43 @@
+{
+  "id": "room1",
+  "originalId": "eG8plUUSc",
+  "title": " 第一个房间",
+  "description": "示例示例",
+  "lastUpdated": "2024-01-15T10:30:00Z",
+  "messageCount": 245,
+  "originalMessageCount": 250,
+  "messages": [
+    {
+      "id": "msg1",
+      "createTime": "2024-01-15T08:00:00Z",
+      "updateTime": "2024-01-15T08:00:00Z",
+      "character": {
+        "name": "柑",
+        "color": "#e67e22",
+        "from": "GM"
+      },
+      "content": "欢迎，示例。",
+      "type": "text",
+      "channel": "main",
+      "isEdited": false,
+      "isPrivate": false,
+      "dice": null
+    },
+    {
+      "id": "msg2", 
+      "createTime": "2024-01-15T08:01:00Z",
+      "updateTime": "2024-01-15T08:01:00Z",
+      "character": {
+        "name": "玩家A",
+        "color": "#3498db",
+        "from": "player1"
+      },
+      "content": "你好，示例。",
+      "type": "text", 
+      "channel": "main",
+      "isEdited": false,
+      "isPrivate": false,
+      "dice": null
+    }
+  ]
+}

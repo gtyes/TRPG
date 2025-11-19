@@ -3,111 +3,43 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>跑团日志档案馆</title>
-    <link rel="stylesheet" href="style.css">
+    <title>柑的带团记录 - TRPG日志档案馆</title>
+    <link rel="stylesheet" href="styles/blog.css">
 </head>
 <body>
-    <header>
-        <h1>🎲 跑团日志档案馆</h1>
-        <p>通过房间ID查看完整的聊天记录</p>
+    <header class="blog-header">
+        <div class="container">
+            <h1>柑的带团记录</h1>
+            <p>TRPG跑团日志</p>
+            <nav>
+                <a href="index.html">首页</a>
+                <a href="#rooms">跑团记录</a>
+                <a href="editor.html" class="editor-link">📝 日志编辑器</a>
+            </nav>
+        </div>
     </header>
-<!-- 设置按钮 -->
-<button id="settingsBtn" class="settings-btn">⚙️ 设置</button>
 
-<!-- 设置面板 -->
-<div id="settingsPanel" class="settings-panel" style="display: none;">
-    <h3>个性化设置</h3>
-    
-    <div class="setting-group">
-        <label>字体设置</label>
-        <select id="fontFamily">
-            <option value="'Segoe UI', Tahoma, sans-serif">默认字体</option>
-            <option value="'SimSun', '宋体', serif">宋体</option>
-            <option value="'SimHei', '黑体', sans-serif">黑体</option>
-            <option value="'KaiTi', '楷体', serif">楷体</option>
-            <option value="'Microsoft YaHei', '微软雅黑', sans-serif">微软雅黑</option>
-            <option value="'Arial', sans-serif">Arial</option>
-            <option value="'Times New Roman', serif">Times New Roman</option>
-        </select>
-        
-        <select id="fontSize">
-            <option value="14px">小号</option>
-            <option value="16px" selected>中号</option>
-            <option value="18px">大号</option>
-            <option value="20px">特大</option>
-        </select>
-    <!-- 新增：角色名字字号 -->
-    <select id="characterNameSize">
-        <option value="14px">小号</option>
-        <option value="16px" selected>中号</option>
-        <option value="18px">大号</option>
-        <option value="20px">特大</option>
-        <option value="22px">巨大</option>
-    </select>
-    </div>
-
-    <div class="setting-group">
-        <label>背景颜色</label>
-        <input type="color" id="bgColor" value="#667eea">
-        <input type="color" id="bgColor2" value="#764ba2">
-        <button id="gradientBtn">渐变背景</button>
-        <button id="solidBgBtn">纯色背景</button>
-    </div>
-
-    <div class="setting-group">
-        <label>固定房间ID</label>
-        <input type="text" id="fixedRoomId" placeholder="输入默认房间ID">
-        <button id="saveRoomBtn">保存房间</button>
-    </div>
-
-    <div class="setting-group">
-        <button id="resetStylesBtn">重置样式</button>
-        <button id="closeSettingsBtn">关闭设置</button>
-    </div>
-
-<div class="filters">
-    <button id="exportBtn">导出为JSON</button>
-    <button id="toggleDiceBtn">只看骰子</button>
-    <button id="shareLocalBtn">分享链接(本地)</button>
-    <button id="shareCloudBtn">分享链接(云端)</button>
-</div>
-</div>
-    <main>
-        <section class="room-input">
-            <div class="input-group">
-                <input type="text" id="roomId" placeholder="输入ccfolia房间ID，如：eG8plUUSc">
-                <button id="loadBtn">加载日志</button>
-            </div>
-            <div class="examples">
-                <small>示例房间ID: eG8plUUSc, xY2zAbC3d (请使用真实的房间ID)</small>
-            </div>
+    <main class="container">
+        <section class="hero">
+            <h2>欢迎来到TRPG</h2>
+            <p>这里是我个人用于存放跑团log的网站。</p>
         </section>
 
-        <section class="controls" style="display: none;">
-            <div class="search-group">
-                <input type="text" id="searchInput" placeholder="搜索消息内容或角色名...">
-                <span id="messageCount"></span>
+        <section id="rooms" class="rooms-grid">
+            <h2>📚 跑团记录</h2>
+            <div id="roomsContainer" class="rooms-container">
+                <!-- 房间卡片会通过JavaScript动态加载 -->
+                <div class="loading">加载中...</div>
             </div>
-            <div class="filters">
-                <button id="exportBtn">导出为JSON</button>
-                <button id="toggleDiceBtn">只看骰子</button>
-            </div>
-        </section>
-
-        <section class="loading" id="loading" style="display: none;">
-            <div class="spinner"></div>
-            <p>正在加载日志...</p>
-        </section>
-
-        <section class="logs-container">
-            <div id="logsList" class="logs-list"></div>
         </section>
     </main>
 
-    <footer>
-        <p>数据来源: <a href="https://ccfolia.com/" target="_blank">ccfolia</a> | 基于 Google Firestore API</p>
+    <footer class="blog-footer">
+        <div class="container">
+            <p>Powered by ccfolia & GitHub Pages | 最后更新: <span id="lastUpdate"></span></p>
+        </div>
     </footer>
 
-    <script src="script.js"></script>
+    <script src="scripts/blog.js"></script>
 </body>
 </html>

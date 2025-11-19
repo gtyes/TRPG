@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TRPG日志编辑器</title>
+    <link rel="stylesheet" href="styles/editor.css">
+</head>
+<body>
+    <div class="editor-container">
+        <!-- 侧边栏 -->
+        <div class="sidebar">
+            <h2>📝 TRPG日志编辑器</h2>
+            
+            <div class="room-input-section">
+                <h3>加载房间</h3>
+                <input type="text" id="roomIdInput" placeholder="输入ccfolia房间ID">
+                <button id="loadRoomBtn">加载原始日志</button>
+            </div>
+
+            <div class="saved-rooms-section">
+                <h3>已保存的房间</h3>
+                <div id="savedRoomsList"></div>
+            </div>
+
+            <div class="edit-tools">
+                <h3>编辑工具</h3>
+                <button id="addMessageBtn">添加新消息</button>
+                <button id="importJsonBtn">导入JSON</button>
+                <button id="exportJsonBtn">导出JSON</button>
+                <button id="saveToBlogBtn" class="primary">保存到博客</button>
+            </div>
+
+            <div class="stats">
+                <h3>统计信息</h3>
+                <div id="statsInfo"></div>
+            </div>
+        </div>
+
+        <!-- 主编辑区 -->
+        <div class="main-content">
+            <div class="toolbar">
+                <input type="text" id="roomTitle" placeholder="房间标题">
+                <input type="text" id="roomDescription" placeholder="房间描述">
+                <button id="previewBtn">预览</button>
+                <button id="publishBtn" class="publish-btn">发布更新</button>
+            </div>
+
+            <div class="messages-editor">
+                <div id="messagesList" class="messages-list">
+                    <div class="empty-state">
+                        <p>请先加载一个房间或创建新的日志</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 添加消息的模态框 -->
+    <div id="addMessageModal" class="modal">
+        <div class="modal-content">
+            <h3>添加新消息</h3>
+            <form id="addMessageForm">
+                <input type="text" name="characterName" placeholder="角色名" required>
+                <input type="color" name="characterColor" value="#666666">
+                <textarea name="content" placeholder="消息内容" required></textarea>
+                <div class="modal-actions">
+                    <button type="submit">添加</button>
+                    <button type="button" onclick="closeModal()">取消</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="scripts/editor.js"></script>
+</body>
+</html>
