@@ -6,12 +6,123 @@ class TrpgLogViewer {
         this.edits = {}; // 存储编辑后的消息
         this.deletedMessages = new Set(); // 存储删除的消息ID
         this.messageOrder = []; // 存储消息顺序
+        this.github = {
+            username: 'gtyes',  // GitHub 用户名
+            repo: 'TRPG',  // 仓库名
+            branch: 'main' // 分支名
+        };
         
         this.initializeEventListeners();
         this.loadSettings();
         this.loadFixedRoom();
+        this.loadFromURL(); // 新增：从URL参数加载
+    }
+    // 新增：从URL参数加载房间和编辑数据
+    loadFromURL() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const roomId = urlParams.get('room');
+        const editSource = urlParams.get('source'); // 'github' 或 'local'
+        
+        if (roomId) {
+            document.getElementById('roomId').value = roomId;
+            if (editSource === 'github') {
+                this.loadEditsFromGitHub(roomId);
+            } else {
+                this.loadLogs(); // 自动加载
+            }
+        }
     }
 
+    // 新增：生成分享链接
+    generateShareLink(useGitHub = false) {
+        const roomId = document.getElementById('roomId').value;
+        if (!roomId) {
+            alert('请先加载一个房间');
+            return;
+        }
+
+        let shareUrl = `${window.location.origin}${window.location.pathname}?room=${roomId}`;
+        
+        if (useGitHub) {
+            shareUrl += '&source=github';
+            // 先保存到GitHub
+            this.saveEditsToGitHub().then(() => {
+                this.copyToClipboard(shareUrl);
+                alert('分享链接已生成并复制到剪贴板！其他用户可以看到你的编辑。');
+            }).catch(error => {
+                console.error('保存到GitHub失败:', error);
+                alert('保存到GitHub失败，请检查控制台信息');
+            });
+        } else {
+            shareUrl += '&source=local';
+            this.copyToClipboard(shareUrl);
+            alert('分享链接已复制到剪贴板！注意：其他用户只能看到原始日志，看不到你的编辑。');
+        }
+    }
+
+    // 新增：保存编辑数据到GitHub
+    async saveEditsToGitHub() {
+        const roomId = document.getElementById('roomId').value;
+        const editsData = {
+            edits: this.edits,
+            deletedMessages: Array.from(this.deletedMessages),
+            messageOrder: this.messageOrder,
+            saveTime: new Date().toISOString(),
+            version: '1.0'
+        };
+
+        const content = btoa(unescape(encodeURIComponent(JSON.stringify(editsData, null, 2))));
+        const filename = `edits/${roomId}.json`;
+        
+        // 这里需要GitHub Personal Access Token，但为了安全，我们不硬编码
+        // 实际使用时，你可以：
+        // 1. 手动创建 edits/roomId.json 文件
+        // 2. 或者使用 GitHub API（需要token）
+        
+        console.log('请手动创建以下文件到你的GitHub仓库:');
+        console.log(`路径: edits/${roomId}.json`);
+        console.log('内容:', editsData);
+        
+        // 提示用户手动操作
+        const blob = new Blob([JSON.stringify(editsData, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${roomId}-edits.json`;
+        a.click();
+        
+        alert(`编辑数据已导出为文件，请手动上传到你的GitHub仓库的edits文件夹中。\n文件名: ${roomId}.json`);
+    }
+
+    // 新增：从GitHub加载编辑数据
+    async loadEditsFromGitHub(roomId) {
+        try {
+            const response = await fetch(`https://raw.githubusercontent.com/${this.github.username}/${this.github.repo}/${this.github.branch}/edits/${roomId}.json`);
+            if (response.ok) {
+                const editsData = await response.json();
+                this.edits = editsData.edits || {};
+                this.deletedMessages = new Set(editsData.deletedMessages || []);
+                this.messageOrder = editsData.messageOrder || [];
+                
+                // 重新加载日志并应用编辑
+                await this.loadLogs();
+                alert('已加载云端编辑数据！');
+            }
+        } catch (error) {
+            console.log('没有找到云端的编辑数据，使用本地版本');
+        }
+    }
+
+    // 新增：复制到剪贴板
+    copyToClipboard(text) {
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+    }
+}
     initializeEventListeners() {
         // 基本功能
         document.getElementById('loadBtn').addEventListener('click', () => this.loadLogs());
@@ -30,10 +141,14 @@ class TrpgLogViewer {
         document.getElementById('bgColor2').addEventListener('change', (e) => this.changeBackground(document.getElementById('bgColor').value, e.target.value));
         document.getElementById('gradientBtn').addEventListener('click', () => this.applyGradientBackground());
         document.getElementById('solidBgBtn').addEventListener('click', () => this.applySolidBackground());
+        document.getElementById('characterNameSize').addEventListener('change', (e) => this.changeCharacterNameSize(e.target.value));
         
         // 房间设置
         document.getElementById('saveRoomBtn').addEventListener('click', () => this.saveFixedRoom());
         document.getElementById('resetStylesBtn').addEventListener('click', () => this.resetStyles());
+        // 分享按钮
+        document.getElementById('shareLocalBtn').addEventListener('click', () => this.generateShareLink(false));
+        document.getElementById('shareCloudBtn').addEventListener('click', () => this.generateShareLink(true));
         
         // 回车键加载
         document.getElementById('roomId').addEventListener('keypress', (e) => {
@@ -46,32 +161,38 @@ class TrpgLogViewer {
         const panel = document.getElementById('settingsPanel');
         panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
     }
+// 新增：改变角色名字字号
+changeCharacterNameSize(size) {
+    document.documentElement.style.setProperty('--character-name-size', size);
+    localStorage.setItem('trpgCharacterNameSize', size);
+}
+loadSettings() {
+    // 加载保存的样式设置
+    const fontFamily = localStorage.getItem('trpgFontFamily') || "'Segoe UI', Tahoma, sans-serif";
+    const fontSize = localStorage.getItem('trpgFontSize') || '16px';
+    const characterNameSize = localStorage.getItem('trpgCharacterNameSize') || '16px';
+    const bgColor = localStorage.getItem('trpgBgColor') || '#667eea';
+    const bgColor2 = localStorage.getItem('trpgBgColor2') || '#764ba2';
+    const bgType = localStorage.getItem('trpgBgType') || 'gradient';
 
-    loadSettings() {
-        // 加载保存的样式设置
-        const fontFamily = localStorage.getItem('trpgFontFamily') || "'Segoe UI', Tahoma, sans-serif";
-        const fontSize = localStorage.getItem('trpgFontSize') || '16px';
-        const bgColor = localStorage.getItem('trpgBgColor') || '#667eea';
-        const bgColor2 = localStorage.getItem('trpgBgColor2') || '#764ba2';
-        const bgType = localStorage.getItem('trpgBgType') || 'gradient';
-
-        // 应用样式
-        this.changeFontFamily(fontFamily);
-        this.changeFontSize(fontSize);
-        
-        if (bgType === 'gradient') {
-            this.changeBackground(bgColor, bgColor2);
-        } else {
-            this.applySolidBackground(bgColor);
-        }
-
-        // 更新设置面板
-        document.getElementById('fontFamily').value = fontFamily;
-        document.getElementById('fontSize').value = fontSize;
-        document.getElementById('bgColor').value = bgColor;
-        document.getElementById('bgColor2').value = bgColor2;
+    // 应用样式
+    this.changeFontFamily(fontFamily);
+    this.changeFontSize(fontSize);
+    this.changeCharacterNameSize(characterNameSize);
+    
+    if (bgType === 'gradient') {
+        this.changeBackground(bgColor, bgColor2);
+    } else {
+        this.applySolidBackground(bgColor);
     }
 
+    // 更新设置面板
+    document.getElementById('fontFamily').value = fontFamily;
+    document.getElementById('fontSize').value = fontSize;
+    document.getElementById('characterNameSize').value = characterNameSize;
+    document.getElementById('bgColor').value = bgColor;
+    document.getElementById('bgColor2').value = bgColor2;
+}
     changeFontFamily(font) {
         document.body.style.fontFamily = font;
         localStorage.setItem('trpgFontFamily', font);
@@ -102,25 +223,38 @@ class TrpgLogViewer {
         localStorage.setItem('trpgBgType', 'solid');
     }
 
-    resetStyles() {
-        localStorage.removeItem('trpgFontFamily');
-        localStorage.removeItem('trpgFontSize');
-        localStorage.removeItem('trpgBgColor');
-        localStorage.removeItem('trpgBgColor2');
-        localStorage.removeItem('trpgBgType');
-        
-        location.reload(); // 重新加载页面应用默认样式
-    }
+resetStyles() {
+    localStorage.removeItem('trpgFontFamily');
+    localStorage.removeItem('trpgFontSize');
+    localStorage.removeItem('trpgCharacterNameSize');
+    localStorage.removeItem('trpgBgColor');
+    localStorage.removeItem('trpgBgColor2');
+    localStorage.removeItem('trpgBgType');
+    
+    location.reload();
+}
 
     // 固定房间功能
-    saveFixedRoom() {
-        const roomId = document.getElementById('fixedRoomId').value.trim();
-        if (roomId) {
-            localStorage.setItem('trpgFixedRoom', roomId);
-            document.getElementById('roomId').value = roomId;
-            alert('默认房间已保存！');
-        }
+saveFixedRoom() {
+    const roomId = document.getElementById('fixedRoomId').value.trim();
+    if (roomId) {
+        localStorage.setItem('trpgFixedRoom', roomId);
+        document.getElementById('roomId').value = roomId;
+        
+        // 同时保存样式设置
+        const settings = {
+            fontFamily: document.getElementById('fontFamily').value,
+            fontSize: document.getElementById('fontSize').value,
+            characterNameSize: document.getElementById('characterNameSize').value,
+            bgColor: document.getElementById('bgColor').value,
+            bgColor2: document.getElementById('bgColor2').value,
+            bgType: localStorage.getItem('trpgBgType') || 'gradient'
+        };
+        
+        localStorage.setItem('trpgRoomSettings', JSON.stringify(settings));
+        alert('默认房间和样式设置已保存！');
     }
+}
 
     loadFixedRoom() {
         const fixedRoom = localStorage.getItem('trpgFixedRoom');
@@ -382,62 +516,88 @@ class TrpgLogViewer {
         return processed;
     }
 
-    createMessageElement(message) {
-        const fields = message.fields;
-        const messageId = message.name.split('/').pop();
-        
-        const div = document.createElement('div');
-        div.className = 'message';
-        div.setAttribute('data-message-id', messageId);
-        
-        const characterColor = fields.color?.stringValue || '#666';
-        const isPrivate = fields.to?.stringValue;
-        const hasDice = fields.extend?.mapValue?.fields?.roll;
-        
-        if (isPrivate) {
-            div.classList.add('private-message');
-        }
+createMessageElement(message) {
+    const fields = message.fields;
+    const messageId = message.name.split('/').pop();
+    
+    const div = document.createElement('div');
+    div.className = 'message';
+    div.setAttribute('data-message-id', messageId);
+    
+    const characterColor = fields.color?.stringValue || '#666';
+    const isPrivate = fields.to?.stringValue;
+    const hasDice = fields.extend?.mapValue?.fields?.roll;
+    const iconUrl = fields.iconUrl?.stringValue;
+    
+    if (isPrivate) {
+        div.classList.add('private-message');
+    }
 
-        // 格式化时间
-        const createTime = new Date(message.createTime).toLocaleString('zh-CN');
+    // 格式化时间
+    const createTime = new Date(message.createTime).toLocaleString('zh-CN');
+    
+    // 生成头像HTML
+    const avatarHtml = this.createAvatarHtml(iconUrl, fields.name?.stringValue);
+    
+    // 角色信息
+    const characterMeta = [];
+    if (fields.channelName?.stringValue) {
+        characterMeta.push(fields.channelName.stringValue);
+    }
+    if (isPrivate) {
+        characterMeta.push('私聊');
+    }
 
-        let content = `
-            <div class="message-header">
-                <span class="character-name" style="color: ${characterColor}">
-                    ${fields.name?.stringValue || '未知'}
-                </span>
-                <span class="message-time">${createTime}</span>
+    let content = `
+        <div class="message-header">
+            <div class="character-info">
+                ${avatarHtml}
+                <div class="character-main">
+                    <span class="character-name" style="color: ${characterColor}">
+                        ${fields.name?.stringValue || '未知'}
+                    </span>
+                    ${characterMeta.length ? `<div class="character-meta">${characterMeta.join(' · ')}</div>` : ''}
+                </div>
             </div>
-            <div class="message-content">${this.escapeHtml(fields.text?.stringValue || '')}</div>
-        `;
+            <span class="message-time">${createTime}</span>
+        </div>
+        <div class="message-content">${this.escapeHtml(fields.text?.stringValue || '')}</div>
+    `;
 
-        // 私聊信息
-        if (isPrivate) {
-            content += `<div class="private-info">私聊给: ${fields.toName?.stringValue || '未知'}</div>`;
-        }
+    // 骰子结果
+    if (hasDice) {
+        const roll = fields.extend.mapValue.fields.roll.mapValue.fields;
+        content += `<div class="dice-result">${roll.result?.stringValue || ''}</div>`;
+    }
 
-        // 骰子结果
-        if (hasDice) {
-            const roll = fields.extend.mapValue.fields.roll.mapValue.fields;
-            content += `<div class="dice-result">${roll.result?.stringValue || ''}</div>`;
-        }
-
-        // 编辑按钮
+    // 编辑按钮（仅在自己查看时显示）
+    if (!window.location.search.includes('source=github')) {
         content += `
             <div class="message-actions">
                 <button class="edit-btn" onclick="trpgViewer.editMessage('${messageId}')">编辑</button>
                 <button class="delete-btn" onclick="trpgViewer.deleteMessage('${messageId}')">删除</button>
             </div>
         `;
-
-        div.innerHTML = content;
-        
-        // 启用拖拽
-        this.makeMessageDraggable(div, messageId);
-        
-        return div;
     }
 
+    div.innerHTML = content;
+    
+    // 启用拖拽（仅在自己查看时）
+    if (!window.location.search.includes('source=github')) {
+        this.makeMessageDraggable(div, messageId);
+    }
+    
+    return div;
+}
+// 新增：创建头像HTML
+createAvatarHtml(iconUrl, characterName) {
+    if (iconUrl) {
+        return `<img src="${iconUrl}" class="character-avatar" alt="${characterName}的头像" onerror="this.style.display='none'">`;
+    } else {
+        const firstChar = characterName ? characterName.charAt(0) : '?';
+        return `<div class="character-avatar avatar-placeholder">${firstChar}</div>`;
+    }
+}
     // 其余原有方法保持不变（loadLogs, fetchAllMessages, filterMessages等）
     async loadLogs() {
         const roomId = document.getElementById('roomId').value.trim();

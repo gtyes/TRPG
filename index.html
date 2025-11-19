@@ -36,6 +36,14 @@
             <option value="18px">大号</option>
             <option value="20px">特大</option>
         </select>
+    <!-- 新增：角色名字字号 -->
+    <select id="characterNameSize">
+        <option value="14px">小号</option>
+        <option value="16px" selected>中号</option>
+        <option value="18px">大号</option>
+        <option value="20px">特大</option>
+        <option value="22px">巨大</option>
+    </select>
     </div>
 
     <div class="setting-group">
@@ -56,6 +64,13 @@
         <button id="resetStylesBtn">重置样式</button>
         <button id="closeSettingsBtn">关闭设置</button>
     </div>
+
+<div class="filters">
+    <button id="exportBtn">导出为JSON</button>
+    <button id="toggleDiceBtn">只看骰子</button>
+    <button id="shareLocalBtn">分享链接(本地)</button>
+    <button id="shareCloudBtn">分享链接(云端)</button>
+</div>
 </div>
     <main>
         <section class="room-input">
