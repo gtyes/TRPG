@@ -251,3 +251,30 @@ body {
     color: #666;
     font-style: italic;
 }
+/* 在现有样式后面添加 */
+
+/* 消息容器 */
+.messages-container {
+    max-height: none;
+    overflow-y: visible;
+}
+
+/* 私聊消息样式 */
+.private-info {
+    background: #fff3e0;
+    border-left: 3px solid #ff9800;
+    padding: 0.5rem;
+    margin-top: 0.5rem;
+    font-size: 0.9rem;
+    color: #e65100;
+}
+
+/* 链接样式 */
+.message-content a {
+    color: #2196f3;
+    text-decoration: underline;
+}
+
+.message-content a:hover {
+    color: #1976d2;
+}

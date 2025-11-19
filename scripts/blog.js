@@ -2,50 +2,143 @@ class BlogViewer {
     constructor() {
         this.rooms = [];
         this.currentRoom = null;
+        this.currentView = 'home'; // 'home' 或 'room'
         this.initialize();
     }
 
     async initialize() {
         await this.loadRoomsList();
+        this.setupNavigation();
+        this.showHomeView();
+    }
+
+    setupNavigation() {
+        // 监听URL变化
+        window.addEventListener('popstate', () => {
+            this.handleRouteChange();
+        });
+
+        // 初始路由处理
+        this.handleRouteChange();
+    }
+
+    handleRouteChange() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const roomId = urlParams.get('room');
+        
+        if (roomId) {
+            this.showRoomView(roomId);
+        } else {
+            this.showHomeView();
+        }
+    }
+
+    async showHomeView() {
+        this.currentView = 'home';
+        document.body.innerHTML = this.getHomeHTML();
+        await this.loadRoomsList();
         this.displayRooms();
         this.updateLastModified();
-        this.setupRouting();
     }
 
-    // 加载房间列表
-// 在 loadRoomsList 方法中添加更详细的错误处理
-async loadRoomsList() {
-    try {
-        console.log('开始加载房间列表...');
-        const response = await fetch('data/rooms.json');
-        console.log('响应状态:', response.status);
-        
-        if (!response.ok) {
-            throw new Error(`HTTP错误: ${response.status}`);
-        }
-        
-        const data = await response.json();
-        console.log('加载到的数据:', data);
-        this.rooms = data;
-        
-    } catch (error) {
-        console.error('加载房间列表失败:', error);
-        // 显示友好的错误信息
-        const container = document.getElementById('roomsContainer');
-        if (container) {
-            container.innerHTML = `
-                <div class="error-message">
-                    <h3>加载失败</h3>
-                    <p>${error.message}</p>
-                    <p>请检查 data/rooms.json 文件是否存在且格式正确</p>
+    async showRoomView(roomId) {
+        this.currentView = 'room';
+        document.body.innerHTML = this.getRoomHTML();
+        await this.loadRoom(roomId);
+    }
+
+    getHomeHTML() {
+        return `
+            <header class="blog-header">
+                <div class="container">
+                    <h1>🍊 柑的带团记录</h1>
+                    <p>TRPG跑团日志与回忆</p>
+                    <nav>
+                        <a href="#" onclick="blogViewer.navigateHome()">首页</a>
+                        <a href="#rooms">跑团记录</a>
+                        <a href="editor.html" class="editor-link">📝 日志编辑器</a>
+                    </nav>
                 </div>
-            `;
-        }
-        this.rooms = [];
-    }
-}
+            </header>
 
-    // 显示房间网格
+            <main class="container">
+                <section class="hero">
+                    <h2>欢迎来到我的TRPG世界</h2>
+                    <p>这里记录了我带团的点点滴滴，包括完整的聊天记录、骰子结果和故事发展。</p>
+                </section>
+
+                <section id="rooms" class="rooms-grid">
+                    <h2>📚 跑团记录</h2>
+                    <div id="roomsContainer" class="rooms-container">
+                        <div class="loading">加载中...</div>
+                    </div>
+                </section>
+            </main>
+
+            <footer class="blog-footer">
+                <div class="container">
+                    <p>Powered by ccfolia & GitHub Pages | 最后更新: <span id="lastUpdate"></span></p>
+                </div>
+            </footer>
+        `;
+    }
+
+    getRoomHTML() {
+        return `
+            <header class="blog-header">
+                <div class="container">
+                    <h1>🍊 柑的带团记录</h1>
+                    <nav>
+                        <a href="#" onclick="blogViewer.navigateHome()">← 返回首页</a>
+                        <a href="#" id="editorLink" style="display: none;">📝 在编辑器中打开</a>
+                    </nav>
+                </div>
+            </header>
+
+            <main class="container">
+                <div class="log-container">
+                    <div class="log-header">
+                        <h1 class="log-title" id="roomTitle">加载中...</h1>
+                        <div class="log-meta" id="roomMeta"></div>
+                    </div>
+                    <div id="messagesContainer" class="messages-container">
+                        <div class="loading">加载日志中...</div>
+                    </div>
+                </div>
+            </main>
+
+            <footer class="blog-footer">
+                <div class="container">
+                    <p>Powered by ccfolia & GitHub Pages</p>
+                </div>
+            </footer>
+        `;
+    }
+
+    navigateHome() {
+        window.history.pushState({}, '', 'index.html');
+        this.showHomeView();
+        return false;
+    }
+
+    navigateToRoom(roomId) {
+        window.history.pushState({}, '', `index.html?room=${roomId}`);
+        this.showRoomView(roomId);
+        return false;
+    }
+
+    // 其他方法保持不变...
+    async loadRoomsList() {
+        try {
+            const response = await fetch('data/rooms.json');
+            if (!response.ok) throw new Error('无法加载房间列表');
+            this.rooms = await response.json();
+        } catch (error) {
+            console.error('加载房间列表失败:', error);
+            this.rooms = [];
+        }
+    }
+
     displayRooms() {
         const container = document.getElementById('roomsContainer');
         if (!container) return;
@@ -56,7 +149,7 @@ async loadRoomsList() {
         }
 
         container.innerHTML = this.rooms.map(room => `
-            <a href="room.html?id=${room.id}" class="room-card">
+            <a href="#" onclick="blogViewer.navigateToRoom('${room.id}')" class="room-card">
                 <h3 class="room-title">${room.title}</h3>
                 <p class="room-description">${room.description}</p>
                 <div class="room-meta">
@@ -67,106 +160,97 @@ async loadRoomsList() {
         `).join('');
     }
 
-    // 加载单个房间日志
-    async loadRoomLog(roomId) {
+    async loadRoom(roomId) {
         try {
             const response = await fetch(`data/${roomId}-edited.json`);
             if (!response.ok) throw new Error('房间数据不存在');
-            return await response.json();
+            this.currentRoom = await response.json();
+            this.displayRoom();
         } catch (error) {
-            console.error('加载房间日志失败:', error);
-            return null;
+            console.error('加载房间失败:', error);
+            this.showError(`加载失败: ${error.message}`);
         }
     }
 
-    // 显示房间日志
-    async displayRoomLog(roomId) {
-        const roomData = await this.loadRoomLog(roomId);
-        if (!roomData) {
-            document.body.innerHTML = '<div class="log-container"><h2>房间数据不存在</h2></div>';
+    displayRoom() {
+        if (!this.currentRoom) return;
+
+        document.getElementById('roomTitle').textContent = this.currentRoom.title;
+        
+        const lastUpdated = new Date(this.currentRoom.lastUpdated).toLocaleDateString('zh-CN');
+        document.getElementById('roomMeta').innerHTML = `
+            最后更新: ${lastUpdated} | 
+            ${this.currentRoom.messageCount} 条消息
+        `;
+
+        const editorLink = document.getElementById('editorLink');
+        editorLink.href = `editor.html?room=${this.currentRoom.id}`;
+        editorLink.style.display = 'inline';
+
+        this.displayMessages();
+    }
+
+    displayMessages() {
+        const container = document.getElementById('messagesContainer');
+        
+        if (!this.currentRoom.messages || this.currentRoom.messages.length === 0) {
+            container.innerHTML = '<div class="empty-state">暂无消息记录</div>';
             return;
         }
 
-        this.renderLogPage(roomData);
+        container.innerHTML = this.currentRoom.messages
+            .map(message => this.createMessageHTML(message))
+            .join('');
     }
 
-    // 渲染日志页面
-    renderLogPage(roomData) {
-        document.body.innerHTML = `
-            <header class="blog-header">
-                <div class="container">
-                    <h1>🍊 柑的带团记录</h1>
-                    <nav>
-                        <a href="index.html">← 返回首页</a>
-                        <a href="editor.html?room=${roomData.roomId}">📝 在编辑器中打开</a>
-                    </nav>
-                </div>
-            </header>
+    createMessageHTML(message) {
+        const time = new Date(message.createTime).toLocaleString('zh-CN');
+        const characterName = message.character?.name || '未知';
+        const characterColor = message.character?.color || '#666';
+        const content = message.content || '';
 
-            <main class="container">
-                <div class="log-container">
-                    <div class="log-header">
-                        <h1 class="log-title">${roomData.title}</h1>
-                        <div class="log-meta">
-                            最后更新: ${this.formatDate(roomData.lastUpdated)} | 
-                            ${roomData.messageCount} 条消息 |
-                            ${roomData.originalMessageCount} 条原始消息
-                        </div>
-                    </div>
-                    <div id="messagesContainer"></div>
+        let messageHTML = `
+            <div class="message">
+                <div class="message-header">
+                    <span class="character-name" style="color: ${characterColor}">
+                        ${this.escapeHTML(characterName)}
+                    </span>
+                    <span class="message-time">${time}</span>
                 </div>
-            </main>
-
-            <footer class="blog-footer">
-                <div class="container">
-                    <p>Powered by ccfolia & GitHub Pages</p>
-                </div>
-            </footer>
+                <div class="message-content">${this.formatContent(content)}</div>
         `;
 
-        this.renderMessages(roomData.messages);
-    }
-
-    // 渲染消息列表
-    renderMessages(messages) {
-        const container = document.getElementById('messagesContainer');
-        container.innerHTML = messages.map(message => this.createMessageHTML(message)).join('');
-    }
-
-    // 创建消息HTML
-createMessageHTML(message) {
-    const time = new Date(message.createTime).toLocaleString('zh-CN');
-    
-    // 确保所有必需的字段都有值
-    const characterName = message.character?.name || '未知';
-    const characterColor = message.character?.color || '#666';
-    const content = message.content || '';
-    
-    return `
-        <div class="message">
-            <div class="message-header">
-                <span class="character-name" style="color: ${characterColor}">
-                    ${characterName}
-                </span>
-                <span class="message-time">${time}</span>
-            </div>
-            <div class="message-content">${this.escapeHTML(content)}</div>
-            ${message.dice ? `<div class="dice-result">🎲 ${message.dice.result || '骰子结果'}</div>` : ''}
-        </div>
-    `;
-}
-
-    // 简单路由
-    setupRouting() {
-        const urlParams = new URLSearchParams(window.location.search);
-        const roomId = urlParams.get('id');
-        
-        if (roomId && document.getElementById('messagesContainer')) {
-            this.displayRoomLog(roomId);
+        if (message.dice && message.dice.result) {
+            messageHTML += `<div class="dice-result">${this.escapeHTML(message.dice.result)}</div>`;
         }
+
+        messageHTML += `</div>`;
+        return messageHTML;
     }
 
-    // 工具函数
+    formatContent(content) {
+        return this.escapeHTML(content)
+            .replace(/\n/g, '<br>')
+            .replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank">$1</a>');
+    }
+
+    escapeHTML(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    showError(message) {
+        const container = document.getElementById('messagesContainer');
+        container.innerHTML = `
+            <div class="error-message">
+                <h3>加载失败</h3>
+                <p>${message}</p>
+                <p><a href="#" onclick="blogViewer.navigateHome()">返回首页</a></p>
+            </div>
+        `;
+    }
+
     formatDate(dateString) {
         return new Date(dateString).toLocaleDateString('zh-CN');
     }
@@ -177,15 +261,10 @@ createMessageHTML(message) {
             element.textContent = new Date().toLocaleDateString('zh-CN');
         }
     }
-
-    escapeHTML(text) {
-        const div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
-    }
 }
 
 // 初始化博客
+let blogViewer;
 document.addEventListener('DOMContentLoaded', () => {
-    new BlogViewer();
+    blogViewer = new BlogViewer();
 });
