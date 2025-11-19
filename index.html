@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>跑团日志档案馆</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <h1>🎲 跑团日志档案馆</h1>
+        <p>通过房间ID查看完整的聊天记录</p>
+    </header>
+
+    <main>
+        <section class="room-input">
+            <div class="input-group">
+                <input type="text" id="roomId" placeholder="输入ccfolia房间ID，如：eG8plUUSc">
+                <button id="loadBtn">加载日志</button>
+            </div>
+            <div class="examples">
+                <small>示例房间ID: eG8plUUSc, xY2zAbC3d (请使用真实的房间ID)</small>
+            </div>
+        </section>
+
+        <section class="controls" style="display: none;">
+            <div class="search-group">
+                <input type="text" id="searchInput" placeholder="搜索消息内容或角色名...">
+                <span id="messageCount"></span>
+            </div>
+            <div class="filters">
+                <button id="exportBtn">导出为JSON</button>
+                <button id="toggleDiceBtn">只看骰子</button>
+            </div>
+        </section>
+
+        <section class="loading" id="loading" style="display: none;">
+            <div class="spinner"></div>
+            <p>正在加载日志...</p>
+        </section>
+
+        <section class="logs-container">
+            <div id="logsList" class="logs-list"></div>
+        </section>
+    </main>
+
+    <footer>
+        <p>数据来源: <a href="https://ccfolia.com/" target="_blank">ccfolia</a> | 基于 Google Firestore API</p>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>
