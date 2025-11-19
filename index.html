@@ -11,7 +11,52 @@
         <h1>🎲 跑团日志档案馆</h1>
         <p>通过房间ID查看完整的聊天记录</p>
     </header>
+<!-- 设置按钮 -->
+<button id="settingsBtn" class="settings-btn">⚙️ 设置</button>
 
+<!-- 设置面板 -->
+<div id="settingsPanel" class="settings-panel" style="display: none;">
+    <h3>个性化设置</h3>
+    
+    <div class="setting-group">
+        <label>字体设置</label>
+        <select id="fontFamily">
+            <option value="'Segoe UI', Tahoma, sans-serif">默认字体</option>
+            <option value="'SimSun', '宋体', serif">宋体</option>
+            <option value="'SimHei', '黑体', sans-serif">黑体</option>
+            <option value="'KaiTi', '楷体', serif">楷体</option>
+            <option value="'Microsoft YaHei', '微软雅黑', sans-serif">微软雅黑</option>
+            <option value="'Arial', sans-serif">Arial</option>
+            <option value="'Times New Roman', serif">Times New Roman</option>
+        </select>
+        
+        <select id="fontSize">
+            <option value="14px">小号</option>
+            <option value="16px" selected>中号</option>
+            <option value="18px">大号</option>
+            <option value="20px">特大</option>
+        </select>
+    </div>
+
+    <div class="setting-group">
+        <label>背景颜色</label>
+        <input type="color" id="bgColor" value="#667eea">
+        <input type="color" id="bgColor2" value="#764ba2">
+        <button id="gradientBtn">渐变背景</button>
+        <button id="solidBgBtn">纯色背景</button>
+    </div>
+
+    <div class="setting-group">
+        <label>固定房间ID</label>
+        <input type="text" id="fixedRoomId" placeholder="输入默认房间ID">
+        <button id="saveRoomBtn">保存房间</button>
+    </div>
+
+    <div class="setting-group">
+        <button id="resetStylesBtn">重置样式</button>
+        <button id="closeSettingsBtn">关闭设置</button>
+    </div>
+</div>
     <main>
         <section class="room-input">
             <div class="input-group">

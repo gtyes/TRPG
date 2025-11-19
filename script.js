@@ -3,14 +3,37 @@ class TrpgLogViewer {
         this.allMessages = [];
         this.filteredMessages = [];
         this.isLoading = false;
+        this.edits = {}; // 存储编辑后的消息
+        this.deletedMessages = new Set(); // 存储删除的消息ID
+        this.messageOrder = []; // 存储消息顺序
+        
         this.initializeEventListeners();
+        this.loadSettings();
+        this.loadFixedRoom();
     }
 
     initializeEventListeners() {
+        // 基本功能
         document.getElementById('loadBtn').addEventListener('click', () => this.loadLogs());
         document.getElementById('searchInput').addEventListener('input', (e) => this.filterMessages(e.target.value));
         document.getElementById('exportBtn').addEventListener('click', () => this.exportLogs());
         document.getElementById('toggleDiceBtn').addEventListener('click', () => this.toggleDiceOnly());
+        
+        // 设置面板
+        document.getElementById('settingsBtn').addEventListener('click', () => this.toggleSettings());
+        document.getElementById('closeSettingsBtn').addEventListener('click', () => this.toggleSettings());
+        
+        // 样式设置
+        document.getElementById('fontFamily').addEventListener('change', (e) => this.changeFontFamily(e.target.value));
+        document.getElementById('fontSize').addEventListener('change', (e) => this.changeFontSize(e.target.value));
+        document.getElementById('bgColor').addEventListener('change', (e) => this.changeBackground(e.target.value, document.getElementById('bgColor2').value));
+        document.getElementById('bgColor2').addEventListener('change', (e) => this.changeBackground(document.getElementById('bgColor').value, e.target.value));
+        document.getElementById('gradientBtn').addEventListener('click', () => this.applyGradientBackground());
+        document.getElementById('solidBgBtn').addEventListener('click', () => this.applySolidBackground());
+        
+        // 房间设置
+        document.getElementById('saveRoomBtn').addEventListener('click', () => this.saveFixedRoom());
+        document.getElementById('resetStylesBtn').addEventListener('click', () => this.resetStyles());
         
         // 回车键加载
         document.getElementById('roomId').addEventListener('keypress', (e) => {
@@ -18,6 +41,404 @@ class TrpgLogViewer {
         });
     }
 
+    // 设置相关方法
+    toggleSettings() {
+        const panel = document.getElementById('settingsPanel');
+        panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+    }
+
+    loadSettings() {
+        // 加载保存的样式设置
+        const fontFamily = localStorage.getItem('trpgFontFamily') || "'Segoe UI', Tahoma, sans-serif";
+        const fontSize = localStorage.getItem('trpgFontSize') || '16px';
+        const bgColor = localStorage.getItem('trpgBgColor') || '#667eea';
+        const bgColor2 = localStorage.getItem('trpgBgColor2') || '#764ba2';
+        const bgType = localStorage.getItem('trpgBgType') || 'gradient';
+
+        // 应用样式
+        this.changeFontFamily(fontFamily);
+        this.changeFontSize(fontSize);
+        
+        if (bgType === 'gradient') {
+            this.changeBackground(bgColor, bgColor2);
+        } else {
+            this.applySolidBackground(bgColor);
+        }
+
+        // 更新设置面板
+        document.getElementById('fontFamily').value = fontFamily;
+        document.getElementById('fontSize').value = fontSize;
+        document.getElementById('bgColor').value = bgColor;
+        document.getElementById('bgColor2').value = bgColor2;
+    }
+
+    changeFontFamily(font) {
+        document.body.style.fontFamily = font;
+        localStorage.setItem('trpgFontFamily', font);
+    }
+
+    changeFontSize(size) {
+        document.body.style.fontSize = size;
+        localStorage.setItem('trpgFontSize', size);
+    }
+
+    changeBackground(color1, color2) {
+        document.body.style.background = `linear-gradient(135deg, ${color1} 0%, ${color2} 100%)`;
+        localStorage.setItem('trpgBgColor', color1);
+        localStorage.setItem('trpgBgColor2', color2);
+        localStorage.setItem('trpgBgType', 'gradient');
+    }
+
+    applyGradientBackground() {
+        const color1 = document.getElementById('bgColor').value;
+        const color2 = document.getElementById('bgColor2').value;
+        this.changeBackground(color1, color2);
+    }
+
+    applySolidBackground(color = null) {
+        const bgColor = color || document.getElementById('bgColor').value;
+        document.body.style.background = bgColor;
+        localStorage.setItem('trpgBgColor', bgColor);
+        localStorage.setItem('trpgBgType', 'solid');
+    }
+
+    resetStyles() {
+        localStorage.removeItem('trpgFontFamily');
+        localStorage.removeItem('trpgFontSize');
+        localStorage.removeItem('trpgBgColor');
+        localStorage.removeItem('trpgBgColor2');
+        localStorage.removeItem('trpgBgType');
+        
+        location.reload(); // 重新加载页面应用默认样式
+    }
+
+    // 固定房间功能
+    saveFixedRoom() {
+        const roomId = document.getElementById('fixedRoomId').value.trim();
+        if (roomId) {
+            localStorage.setItem('trpgFixedRoom', roomId);
+            document.getElementById('roomId').value = roomId;
+            alert('默认房间已保存！');
+        }
+    }
+
+    loadFixedRoom() {
+        const fixedRoom = localStorage.getItem('trpgFixedRoom');
+        if (fixedRoom) {
+            document.getElementById('roomId').value = fixedRoom;
+            document.getElementById('fixedRoomId').value = fixedRoom;
+        }
+    }
+
+    // 消息编辑功能
+    enableEditMode() {
+        this.isEditMode = true;
+        this.displayMessages(this.filteredMessages);
+    }
+
+    disableEditMode() {
+        this.isEditMode = false;
+        this.displayMessages(this.filteredMessages);
+    }
+
+    editMessage(messageId) {
+        const messageElement = document.querySelector(`[data-message-id="${messageId}"]`);
+        const contentElement = messageElement.querySelector('.message-content');
+        const originalText = contentElement.textContent;
+        
+        // 创建编辑界面
+        const editHtml = `
+            <textarea class="edit-textarea">${originalText}</textarea>
+            <div>
+                <button class="save-btn" onclick="trpgViewer.saveEdit('${messageId}')">保存</button>
+                <button class="cancel-btn" onclick="trpgViewer.cancelEdit('${messageId}', '${this.escapeHtml(originalText)}')">取消</button>
+            </div>
+        `;
+        
+        contentElement.innerHTML = editHtml;
+        messageElement.classList.add('editing');
+        
+        // 自动聚焦到文本框
+        const textarea = messageElement.querySelector('.edit-textarea');
+        textarea.focus();
+        textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+    }
+
+    saveEdit(messageId) {
+        const messageElement = document.querySelector(`[data-message-id="${messageId}"]`);
+        const textarea = messageElement.querySelector('.edit-textarea');
+        const newText = textarea.value.trim();
+        
+        if (newText) {
+            // 保存编辑
+            this.edits[messageId] = newText;
+            this.saveEdits();
+            
+            // 更新显示
+            const contentElement = messageElement.querySelector('.message-content');
+            contentElement.textContent = newText;
+        }
+        
+        messageElement.classList.remove('editing');
+        this.updateMessageActions(messageId);
+    }
+
+    cancelEdit(messageId, originalText) {
+        const messageElement = document.querySelector(`[data-message-id="${messageId}"]`);
+        const contentElement = messageElement.querySelector('.message-content');
+        
+        contentElement.textContent = originalText;
+        messageElement.classList.remove('editing');
+        this.updateMessageActions(messageId);
+    }
+
+    deleteMessage(messageId) {
+        if (confirm('确定要删除这条消息吗？')) {
+            this.deletedMessages.add(messageId);
+            this.saveEdits();
+            
+            // 从显示中移除
+            const messageElement = document.querySelector(`[data-message-id="${messageId}"]`);
+            if (messageElement) {
+                messageElement.style.opacity = '0';
+                setTimeout(() => {
+                    messageElement.remove();
+                    this.updateMessageCount();
+                }, 300);
+            }
+        }
+    }
+
+    updateMessageActions(messageId) {
+        const messageElement = document.querySelector(`[data-message-id="${messageId}"]`);
+        const actionsHtml = `
+            <div class="message-actions">
+                <button class="edit-btn" onclick="trpgViewer.editMessage('${messageId}')">编辑</button>
+                <button class="delete-btn" onclick="trpgViewer.deleteMessage('${messageId}')">删除</button>
+            </div>
+        `;
+        
+        let actionsElement = messageElement.querySelector('.message-actions');
+        if (actionsElement) {
+            actionsElement.innerHTML = actionsHtml;
+        }
+    }
+
+    // 拖拽功能
+    makeMessageDraggable(element, messageId) {
+        element.setAttribute('draggable', 'true');
+        
+        element.addEventListener('dragstart', (e) => {
+            e.dataTransfer.setData('text/plain', messageId);
+            element.classList.add('dragging');
+        });
+        
+        element.addEventListener('dragend', () => {
+            element.classList.remove('dragging');
+        });
+    }
+
+    setupDropZone(container) {
+        container.addEventListener('dragover', (e) => {
+            e.preventDefault();
+        });
+        
+        container.addEventListener('drop', (e) => {
+            e.preventDefault();
+            const messageId = e.dataTransfer.getData('text/plain');
+            const draggedElement = document.querySelector(`[data-message-id="${messageId}"]`);
+            
+            // 获取放置位置
+            const afterElement = this.getDragAfterElement(container, e.clientY);
+            
+            if (afterElement) {
+                container.insertBefore(draggedElement, afterElement);
+            } else {
+                container.appendChild(draggedElement);
+            }
+            
+            // 保存新的顺序
+            this.saveMessageOrder();
+        });
+    }
+
+    getDragAfterElement(container, y) {
+        const draggableElements = [...container.querySelectorAll('.message:not(.dragging)')];
+        
+        return draggableElements.reduce((closest, child) => {
+            const box = child.getBoundingClientRect();
+            const offset = y - box.top - box.height / 2;
+            
+            if (offset < 0 && offset > closest.offset) {
+                return { offset: offset, element: child };
+            } else {
+                return closest;
+            }
+        }, { offset: Number.NEGATIVE_INFINITY }).element;
+    }
+
+    saveMessageOrder() {
+        const container = document.getElementById('logsList');
+        const messageElements = container.querySelectorAll('.message');
+        this.messageOrder = Array.from(messageElements).map(el => el.getAttribute('data-message-id'));
+        this.saveEdits();
+    }
+
+    applyMessageOrder(messages) {
+        if (this.messageOrder.length === 0) return messages;
+        
+        const orderedMessages = [];
+        const messageMap = new Map(messages.map(msg => {
+            const messageId = msg.name.split('/').pop();
+            return [messageId, msg];
+        }));
+        
+        // 按照保存的顺序重新排列
+        for (const messageId of this.messageOrder) {
+            if (messageMap.has(messageId)) {
+                orderedMessages.push(messageMap.get(messageId));
+                messageMap.delete(messageId);
+            }
+        }
+        
+        // 添加剩余的消息（新消息）
+        orderedMessages.push(...messageMap.values());
+        
+        return orderedMessages;
+    }
+
+    // 数据保存和加载
+    saveEdits() {
+        const editsData = {
+            edits: this.edits,
+            deletedMessages: Array.from(this.deletedMessages),
+            messageOrder: this.messageOrder
+        };
+        
+        const roomId = document.getElementById('roomId').value;
+        if (roomId) {
+            localStorage.setItem(`trpgEdits_${roomId}`, JSON.stringify(editsData));
+        }
+    }
+
+    loadEdits(roomId) {
+        const editsData = localStorage.getItem(`trpgEdits_${roomId}`);
+        if (editsData) {
+            const data = JSON.parse(editsData);
+            this.edits = data.edits || {};
+            this.deletedMessages = new Set(data.deletedMessages || []);
+            this.messageOrder = data.messageOrder || [];
+        } else {
+            this.edits = {};
+            this.deletedMessages = new Set();
+            this.messageOrder = [];
+        }
+    }
+
+    // 修改后的消息显示方法
+    displayMessages(messages) {
+        const container = document.getElementById('logsList');
+        container.innerHTML = '';
+
+        // 应用编辑和排序
+        const processedMessages = this.processMessages(messages);
+        
+        processedMessages.forEach(message => {
+            const messageElement = this.createMessageElement(message);
+            container.appendChild(messageElement);
+        });
+
+        // 设置拖拽区域
+        this.setupDropZone(container);
+        
+        this.updateMessageCount();
+    }
+
+    processMessages(messages) {
+        const roomId = document.getElementById('roomId').value;
+        this.loadEdits(roomId);
+        
+        // 过滤已删除的消息
+        let processed = messages.filter(message => {
+            const messageId = message.name.split('/').pop();
+            return !this.deletedMessages.has(messageId);
+        });
+        
+        // 应用文本编辑
+        processed = processed.map(message => {
+            const messageId = message.name.split('/').pop();
+            if (this.edits[messageId]) {
+                // 创建消息的深拷贝，避免修改原始数据
+                const editedMessage = JSON.parse(JSON.stringify(message));
+                editedMessage.fields.text.stringValue = this.edits[messageId];
+                return editedMessage;
+            }
+            return message;
+        });
+        
+        // 应用顺序
+        processed = this.applyMessageOrder(processed);
+        
+        return processed;
+    }
+
+    createMessageElement(message) {
+        const fields = message.fields;
+        const messageId = message.name.split('/').pop();
+        
+        const div = document.createElement('div');
+        div.className = 'message';
+        div.setAttribute('data-message-id', messageId);
+        
+        const characterColor = fields.color?.stringValue || '#666';
+        const isPrivate = fields.to?.stringValue;
+        const hasDice = fields.extend?.mapValue?.fields?.roll;
+        
+        if (isPrivate) {
+            div.classList.add('private-message');
+        }
+
+        // 格式化时间
+        const createTime = new Date(message.createTime).toLocaleString('zh-CN');
+
+        let content = `
+            <div class="message-header">
+                <span class="character-name" style="color: ${characterColor}">
+                    ${fields.name?.stringValue || '未知'}
+                </span>
+                <span class="message-time">${createTime}</span>
+            </div>
+            <div class="message-content">${this.escapeHtml(fields.text?.stringValue || '')}</div>
+        `;
+
+        // 私聊信息
+        if (isPrivate) {
+            content += `<div class="private-info">私聊给: ${fields.toName?.stringValue || '未知'}</div>`;
+        }
+
+        // 骰子结果
+        if (hasDice) {
+            const roll = fields.extend.mapValue.fields.roll.mapValue.fields;
+            content += `<div class="dice-result">${roll.result?.stringValue || ''}</div>`;
+        }
+
+        // 编辑按钮
+        content += `
+            <div class="message-actions">
+                <button class="edit-btn" onclick="trpgViewer.editMessage('${messageId}')">编辑</button>
+                <button class="delete-btn" onclick="trpgViewer.deleteMessage('${messageId}')">删除</button>
+            </div>
+        `;
+
+        div.innerHTML = content;
+        
+        // 启用拖拽
+        this.makeMessageDraggable(div, messageId);
+        
+        return div;
+    }
+
+    // 其余原有方法保持不变（loadLogs, fetchAllMessages, filterMessages等）
     async loadLogs() {
         const roomId = document.getElementById('roomId').value.trim();
         if (!roomId) {
@@ -82,58 +503,12 @@ class TrpgLogViewer {
 
     showControls() {
         document.querySelector('.controls').style.display = 'block';
-        document.getElementById('messageCount').textContent = `共 ${this.allMessages.length} 条消息`;
+        this.updateMessageCount();
     }
 
-    displayMessages(messages) {
-        const container = document.getElementById('logsList');
-        container.innerHTML = '';
-
-        messages.forEach(message => {
-            const messageElement = this.createMessageElement(message);
-            container.appendChild(messageElement);
-        });
-    }
-
-    createMessageElement(message) {
-        const fields = message.fields;
-        const div = document.createElement('div');
-        div.className = 'message';
-        
-        const characterColor = fields.color?.stringValue || '#666';
-        const isPrivate = fields.to?.stringValue;
-        const hasDice = fields.extend?.mapValue?.fields?.roll;
-        
-        if (isPrivate) {
-            div.classList.add('private-message');
-        }
-
-        // 格式化时间
-        const createTime = new Date(message.createTime).toLocaleString('zh-CN');
-
-        let content = `
-            <div class="message-header">
-                <span class="character-name" style="color: ${characterColor}">
-                    ${fields.name?.stringValue || '未知'}
-                </span>
-                <span class="message-time">${createTime}</span>
-            </div>
-            <div class="message-content">${this.escapeHtml(fields.text?.stringValue || '')}</div>
-        `;
-
-        // 私聊信息
-        if (isPrivate) {
-            content += `<div class="private-info">私聊给: ${fields.toName?.stringValue || '未知'}</div>`;
-        }
-
-        // 骰子结果
-        if (hasDice) {
-            const roll = fields.extend.mapValue.fields.roll.mapValue.fields;
-            content += `<div class="dice-result">${roll.result?.stringValue || ''}</div>`;
-        }
-
-        div.innerHTML = content;
-        return div;
+    updateMessageCount() {
+        const visibleCount = document.querySelectorAll('.message').length;
+        document.getElementById('messageCount').textContent = `显示 ${visibleCount} / ${this.allMessages.length} 条消息`;
     }
 
     filterMessages(searchTerm) {
@@ -148,7 +523,6 @@ class TrpgLogViewer {
             });
         }
         this.displayMessages(this.filteredMessages);
-        document.getElementById('messageCount').textContent = `显示 ${this.filteredMessages.length} / ${this.allMessages.length} 条消息`;
     }
 
     toggleDiceOnly() {
@@ -166,7 +540,6 @@ class TrpgLogViewer {
         }
         
         this.displayMessages(this.filteredMessages);
-        document.getElementById('messageCount').textContent = `显示 ${this.filteredMessages.length} / ${this.allMessages.length} 条消息`;
     }
 
     exportLogs() {
@@ -175,11 +548,14 @@ class TrpgLogViewer {
             return;
         }
 
+        const processedMessages = this.processMessages(this.allMessages);
+        
         const exportData = {
             roomId: document.getElementById('roomId').value,
             exportTime: new Date().toISOString(),
-            messageCount: this.allMessages.length,
-            messages: this.allMessages.map(msg => this.processMessageForExport(msg))
+            originalMessageCount: this.allMessages.length,
+            displayedMessageCount: processedMessages.length,
+            messages: processedMessages.map(msg => this.processMessageForExport(msg))
         };
 
         const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
@@ -194,8 +570,11 @@ class TrpgLogViewer {
     }
 
     processMessageForExport(message) {
+        const messageId = message.name.split('/').pop();
+        const editedText = this.edits[messageId];
+        
         return {
-            id: message.name.split('/').pop(),
+            id: messageId,
             createTime: message.createTime,
             updateTime: message.updateTime,
             character: {
@@ -203,7 +582,7 @@ class TrpgLogViewer {
                 color: message.fields.color?.stringValue,
                 from: message.fields.from?.stringValue
             },
-            content: message.fields.text?.stringValue,
+            content: editedText || message.fields.text?.stringValue,
             type: message.fields.type?.stringValue,
             channel: message.fields.channelName?.stringValue,
             isEdited: message.fields.edited?.booleanValue,
@@ -213,7 +592,8 @@ class TrpgLogViewer {
                 success: message.fields.extend.mapValue.fields.roll.mapValue.fields.success?.booleanValue,
                 critical: message.fields.extend.mapValue.fields.roll.mapValue.fields.critical?.booleanValue,
                 fumble: message.fields.extend.mapValue.fields.roll.mapValue.fields.fumble?.booleanValue
-            } : null
+            } : null,
+            isModified: !!editedText
         };
     }
 
@@ -225,6 +605,7 @@ class TrpgLogViewer {
 }
 
 // 初始化应用
+let trpgViewer;
 document.addEventListener('DOMContentLoaded', () => {
-    new TrpgLogViewer();
+    trpgViewer = new TrpgLogViewer();
 });
