@@ -23,6 +23,56 @@
                 <div id="savedRoomsList"></div>
             </div>
 
+            <!-- 新增的设置面板 -->
+            <div class="settings-panels">
+                <div class="setting-panel">
+                    <h3 onclick="logEditor.togglePanel('appearance')">🎨 外观设置</h3>
+                    <div id="appearancePanel" class="panel-content">
+                        <div class="setting-group">
+                            <label>网页背景</label>
+                            <input type="color" id="pageBgColor" value="#667eea">
+                            <input type="color" id="pageBgColor2" value="#764ba2">
+                            <input type="file" id="pageBgImage" accept="image/*" style="display: none;">
+                            <button onclick="document.getElementById('pageBgImage').click()">上传背景图片</button>
+                            <button onclick="logEditor.applyPageBackground('gradient')">渐变背景</button>
+                            <button onclick="logEditor.applyPageBackground('solid')">纯色背景</button>
+                        </div>
+
+                        <div class="setting-group">
+                            <label>日志容器背景</label>
+                            <input type="color" id="logBgColor" value="#ffffff">
+                            <input type="file" id="logBgImage" accept="image/*" style="display: none;">
+                            <button onclick="document.getElementById('logBgImage').click()">上传容器背景</button>
+                            <input type="range" id="logBgOpacity" min="0" max="100" value="100">
+                            <span>透明度: <span id="logOpacityValue">100%</span></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="setting-panel">
+                    <h3 onclick="logEditor.togglePanel('channels')">📢 频道设置</h3>
+                    <div id="channelsPanel" class="panel-content">
+                        <div id="channelSettings"></div>
+                        <button onclick="logEditor.addChannel()">添加频道</button>
+                    </div>
+                </div>
+
+                <div class="setting-panel">
+                    <h3 onclick="logEditor.togglePanel('characters')">👥 角色设置</h3>
+                    <div id="charactersPanel" class="panel-content">
+                        <div id="characterSettings"></div>
+                    </div>
+                </div>
+
+                <div class="setting-panel">
+                    <h3 onclick="logEditor.togglePanel('chapters')">📖 章节设置</h3>
+                    <div id="chaptersPanel" class="panel-content">
+                        <button onclick="logEditor.addChapter()">添加章节</button>
+                        <div id="chapterList"></div>
+                    </div>
+                </div>
+            </div>
+
             <div class="edit-tools">
                 <h3>编辑工具</h3>
                 <button id="addMessageBtn">添加新消息</button>
@@ -42,6 +92,12 @@
             <div class="toolbar">
                 <input type="text" id="roomTitle" placeholder="房间标题">
                 <input type="text" id="roomDescription" placeholder="房间描述">
+                
+                <select id="pageSelect">
+                    <option value="1">第 1 页</option>
+                </select>
+                <button id="addPageBtn">添加分页</button>
+                
                 <button id="previewBtn">预览</button>
                 <button id="publishBtn" class="publish-btn">发布更新</button>
             </div>
@@ -51,6 +107,12 @@
                     <div class="empty-state">
                         <p>请先加载一个房间或创建新的日志</p>
                     </div>
+                </div>
+                
+                <div class="pagination">
+                    <button id="prevPage">上一页</button>
+                    <span id="pageInfo">第 1 页 / 共 1 页</span>
+                    <button id="nextPage">下一页</button>
                 </div>
             </div>
         </div>
@@ -63,10 +125,29 @@
             <form id="addMessageForm">
                 <input type="text" name="characterName" placeholder="角色名" required>
                 <input type="color" name="characterColor" value="#666666">
+                <input type="text" name="characterIcon" placeholder="头像URL（可选）">
+                <select name="channel">
+                    <option value="main">主频道</option>
+                </select>
                 <textarea name="content" placeholder="消息内容" required></textarea>
                 <div class="modal-actions">
                     <button type="submit">添加</button>
                     <button type="button" onclick="closeModal()">取消</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 添加章节的模态框 -->
+    <div id="addChapterModal" class="modal">
+        <div class="modal-content">
+            <h3>添加章节</h3>
+            <form id="addChapterForm">
+                <input type="text" name="chapterTitle" placeholder="章节标题" required>
+                <textarea name="chapterDescription" placeholder="章节描述（可选）"></textarea>
+                <div class="modal-actions">
+                    <button type="submit">添加</button>
+                    <button type="button" onclick="closeModal('addChapterModal')">取消</button>
                 </div>
             </form>
         </div>

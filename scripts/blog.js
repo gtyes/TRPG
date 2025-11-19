@@ -189,3 +189,67 @@ createMessageHTML(message) {
 document.addEventListener('DOMContentLoaded', () => {
     new BlogViewer();
 });
+/* 章节侧边栏 */
+.chapter-sidebar {
+    background: rgba(255,255,255,0.95);
+    border-radius: 10px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    position: sticky;
+    top: 1rem;
+    z-index: 10;
+}
+
+.chapter-sidebar h4 {
+    margin: 0 0 0.5rem 0;
+    color: #333;
+    border-bottom: 2px solid #e67e22;
+    padding-bottom: 0.5rem;
+}
+
+.chapter-link {
+    display: block;
+    padding: 0.5rem;
+    margin: 0.25rem 0;
+    color: #666;
+    text-decoration: none;
+    border-radius: 5px;
+    transition: all 0.3s;
+    font-size: 0.9rem;
+}
+
+.chapter-link:hover {
+    background: #f0f0f0;
+    color: #e67e22;
+}
+
+/* 角色头像 */
+.character-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-right: 0.5rem;
+    border: 2px solid #ddd;
+}
+
+.character-avatar.empty {
+    background: #ddd;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #666;
+    font-weight: bold;
+    font-size: 0.8rem;
+}
+
+/* 频道徽章 */
+.channel-badge {
+    padding: 0.2rem 0.5rem;
+    border-radius: 12px;
+    font-size: 0.7rem;
+    color: white;
+    margin-left: auto;
+    margin-right: 1rem;
+}
