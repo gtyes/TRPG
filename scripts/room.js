@@ -144,31 +144,27 @@ applyChannelClassesToMessages() {
         }
     }
 
-    displayRoom() {
-        if (!this.roomData) return;
+displayRoom() {
+    if (!this.roomData) return;
 
-        // 更新页面标题
-        document.title = `${this.roomData.title} - 柑的带团记录`;
-        
-        // 更新页面内容
-        document.getElementById('roomTitle').textContent = this.roomData.title;
-        
-        // 更新元数据
-        const lastUpdated = new Date(this.roomData.lastUpdated).toLocaleDateString('zh-CN');
-        document.getElementById('roomMeta').innerHTML = `
-            最后更新: ${lastUpdated} | 
-            ${this.roomData.messageCount} 条消息
-            ${this.roomData.originalMessageCount ? ` | ${this.roomData.originalMessageCount} 条原始消息` : ''}
-        `;
+    document.title = `${this.roomData.title} - 柑的带团记录`;
+    document.getElementById('roomTitle').textContent = this.roomData.title;
+    
+    const lastUpdated = new Date(this.roomData.lastUpdated).toLocaleDateString('zh-CN');
+    document.getElementById('roomMeta').innerHTML = `
+        最后更新: ${lastUpdated} | 
+        ${this.roomData.messageCount} 条消息
+    `;
 
-        // 显示编辑器链接
-        const editorLink = document.getElementById('editorLink');
-        editorLink.href = `editor.html?room=${this.roomData.id}`;
-        editorLink.style.display = 'inline';
-
-        // 显示消息
-        this.displayMessages();
-    }
+    // 应用样式设置
+    this.applyStyleSettings();
+    this.displayMessages();
+    
+    // 延迟一点应用频道样式，确保DOM已渲染
+    setTimeout(() => {
+        this.applyChannelStyles();
+    }, 100);
+}
 
     displayMessages() {
         const container = document.getElementById('messagesContainer');
@@ -183,36 +179,44 @@ applyChannelClassesToMessages() {
             .join('');
     }
 
-    createMessageHTML(message) {
-        const time = new Date(message.createTime).toLocaleString('zh-CN');
-        const characterName = message.character?.name || '未知';
-        const characterColor = message.character?.color || '#666';
-        const content = message.content || '';
-
-        let messageHTML = `
-            <div class="message">
-                <div class="message-header">
-                    <span class="character-name" style="color: ${characterColor}">
-                        ${this.escapeHTML(characterName)}
-                    </span>
-                    <span class="message-time">${time}</span>
-                </div>
-                <div class="message-content">${this.formatContent(content)}</div>
+createMessageHTML(message, index) {
+    if (message.type === 'chapter') {
+        return `
+            <div id="chapter-${index}" class="message chapter-message">
+                <div class="chapter-title">${this.escapeHTML(message.chapter.title)}</div>
+                ${message.chapter.description ? 
+                    `<div class="chapter-description">${this.escapeHTML(message.chapter.description)}</div>` : ''}
+            </div>
         `;
-
-        // 添加骰子结果
-        if (message.dice && message.dice.result) {
-            messageHTML += `<div class="dice-result">${this.escapeHTML(message.dice.result)}</div>`;
-        }
-
-        // 添加私聊标识
-        if (message.isPrivate) {
-            messageHTML += `<div class="private-info">🔒 私聊消息</div>`;
-        }
-
-        messageHTML += `</div>`;
-        return messageHTML;
     }
+
+    const time = new Date(message.createTime).toLocaleString('zh-CN');
+    const avatarHTML = message.character.avatar ? 
+        `<img src="${message.character.avatar}" class="character-avatar" alt="${message.character.name}">` : '';
+
+    // 生成频道类名
+    const channelClass = message.channel ? 
+        `channel-${message.channel.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase()}` : '';
+
+    let messageHTML = `
+        <div class="message ${channelClass}">
+            <div class="message-header">
+                ${avatarHTML}
+                <span class="character-name" style="color: ${message.character.color || '#666'}">
+                    ${this.escapeHTML(message.character.name)}
+                </span>
+                <span class="message-time">${time}</span>
+            </div>
+            <div class="message-content">${this.formatContent(message.content)}</div>
+    `;
+
+    if (message.dice && message.dice.result) {
+        messageHTML += `<div class="dice-result">${this.escapeHTML(message.dice.result)}</div>`;
+    }
+
+    messageHTML += `</div>`;
+    return messageHTML;
+}
 
     formatContent(content) {
         // 简单的文本格式化
