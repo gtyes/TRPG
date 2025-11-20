@@ -122,43 +122,41 @@
             <div class="tab-content">
                 <!-- 背景设置 -->
                 <div id="background-tab" class="tab-pane active">
-                    <div class="setting-group">
-                        <h4>网页背景</h4>
-                        <label>
-                            <input type="radio" name="bgType" value="color" checked> 颜色
-                            <input type="color" id="pageBgColor" value="#667eea">
-                        </label>
-                        <label>
-                            <input type="radio" name="bgType" value="gradient"> 渐变
-                            <input type="color" id="pageBgColor1" value="#667eea">
-                            <input type="color" id="pageBgColor2" value="#764ba2">
-                        </label>
-                        <label>
-                            <input type="radio" name="bgType" value="image"> 图片
-                            <input type="file" id="pageBgImage" accept="image/*">
-                            <button onclick="document.getElementById('pageBgImage').click()">选择图片</button>
-                        </label>
-                    </div>
+<div class="setting-group">
+    <h4>网页背景</h4>
+    <label>
+        <input type="radio" name="bgType" value="color" checked> 颜色
+        <input type="color" id="pageBgColor" value="#667eea">
+    </label>
+    <label>
+        <input type="radio" name="bgType" value="gradient"> 渐变
+        <input type="color" id="pageBgColor1" value="#667eea">
+        <input type="color" id="pageBgColor2" value="#764ba2">
+    </label>
+    <label>
+        <input type="radio" name="bgType" value="image"> 图片
+        <input type="text" id="pageBgImage" placeholder="图片路径，如: assets/backgrounds/bg1.jpg">
+        <small>请将图片放在 assets/backgrounds/ 文件夹中</small>
+    </label>
+</div>
 
-                    <div class="setting-group">
-                        <h4>日志容器背景</h4>
-                        <label>
-                            <input type="radio" name="containerBgType" value="color" checked> 颜色
-                            <input type="color" id="containerBgColor" value="#ffffff">
-                        </label>
-                        <label>
-                            <input type="radio" name="containerBgType" value="image"> 图片
-                            <input type="file" id="containerBgImage" accept="image/*">
-                            <button onclick="document.getElementById('containerBgImage').click()">选择图片</button>
-                        </label>
-                        <label>
-                            透明度:
-                            <input type="range" id="containerOpacity" min="0" max="100" value="100">
-                            <span id="containerOpacityValue">100%</span>
-                        </label>
-                    </div>
-                </div>
-
+<div class="setting-group">
+    <h4>日志容器背景</h4>
+    <label>
+        <input type="radio" name="containerBgType" value="color" checked> 颜色
+        <input type="color" id="containerBgColor" value="#ffffff">
+    </label>
+    <label>
+        <input type="radio" name="containerBgType" value="image"> 图片
+        <input type="text" id="containerBgImage" placeholder="图片路径，如: assets/backgrounds/container-bg.jpg">
+        <small>请将图片放在 assets/backgrounds/ 文件夹中</small>
+    </label>
+    <label>
+        透明度:
+        <input type="range" id="containerOpacity" min="0" max="100" value="100">
+        <span id="containerOpacityValue">100%</span>
+    </label>
+</div>
                 <!-- 频道设置 -->
                 <div id="channel-tab" class="tab-pane">
                     <div class="setting-group">

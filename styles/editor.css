@@ -501,3 +501,34 @@ body {
         flex-direction: column;
     }
 }
+/* 样式设置模态框滚动条 */
+.modal-content {
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+/* 标签内容区域滚动条 */
+.tab-content {
+    max-height: 60vh;
+    overflow-y: auto;
+    padding-right: 10px;
+}
+
+/* 自定义滚动条样式 */
+.tab-content::-webkit-scrollbar {
+    width: 8px;
+}
+
+.tab-content::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+.tab-content::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 4px;
+}
+
+.tab-content::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}

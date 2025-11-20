@@ -64,11 +64,53 @@ class RoomViewer {
         this.applyChannelStyles();
     }
 
-    applyChannelStyles() {
-        // 在实际实现中，可以根据消息的channel字段应用不同的样式
-        // 这里需要根据你的具体需求来实现
-    }
+applyChannelStyles() {
+    if (!this.roomData.styleSettings || !this.roomData.styleSettings.channels) return;
 
+    // 创建样式元素
+    const styleElement = document.createElement('style');
+    let cssRules = '';
+
+    // 为每个频道生成CSS规则
+    Object.entries(this.roomData.styleSettings.channels).forEach(([channelName, settings]) => {
+        // 清理频道名称（移除特殊字符）
+        const cleanChannelName = channelName.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase();
+        
+        // 生成CSS类名
+        const className = `channel-${cleanChannelName}`;
+        
+        // 构建CSS规则
+        cssRules += `
+            .${className} {
+                background-color: ${settings.backgroundColor || 'transparent'};
+                opacity: ${(settings.opacity || 100) / 100};
+                border-radius: 8px;
+                padding: 8px;
+                margin: 2px 0;
+            }
+        `;
+    });
+
+    styleElement.textContent = cssRules;
+    document.head.appendChild(styleElement);
+
+    // 为消息应用频道类
+    this.applyChannelClassesToMessages();
+}
+applyChannelClassesToMessages() {
+    const messages = document.querySelectorAll('.message');
+    messages.forEach(message => {
+        // 找到对应的消息数据
+        const messageIndex = Array.from(messages).indexOf(message);
+        if (messageIndex !== -1 && this.roomData.messages[messageIndex]) {
+            const messageData = this.roomData.messages[messageIndex];
+            if (messageData.channel && messageData.type !== 'chapter') {
+                const cleanChannelName = messageData.channel.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase();
+                message.classList.add(`channel-${cleanChannelName}`);
+            }
+        }
+    });
+}
     generateTableOfContents() {
         const chapters = this.roomData.messages.filter(msg => msg.type === 'chapter');
         if (chapters.length === 0) return;

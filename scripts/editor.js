@@ -264,43 +264,27 @@ class LogEditor {
         }
     }
 
-    applyStyleSettings() {
-        const bgType = document.querySelector('input[name="bgType"]:checked').value;
-        const containerBgType = document.querySelector('input[name="containerBgType"]:checked').value;
+applyStyleSettings() {
+    const bgType = document.querySelector('input[name="bgType"]:checked').value;
+    const containerBgType = document.querySelector('input[name="containerBgType"]:checked').value;
 
-        this.styleSettings.background.page = {
-            type: bgType,
-            color1: document.getElementById('pageBgColor1').value,
-            color2: document.getElementById('pageBgColor2').value,
-            image: this.styleSettings.background.page.image // 保持原有图片
-        };
+    this.styleSettings.background.page = {
+        type: bgType,
+        color1: document.getElementById('pageBgColor1').value,
+        color2: document.getElementById('pageBgColor2').value,
+        image: document.getElementById('pageBgImage').value || null // 直接使用图片路径
+    };
 
-        this.styleSettings.background.container = {
-            type: containerBgType,
-            color: document.getElementById('containerBgColor').value,
-            image: this.styleSettings.background.container.image, // 保持原有图片
-            opacity: parseInt(document.getElementById('containerOpacity').value)
-        };
+    this.styleSettings.background.container = {
+        type: containerBgType,
+        color: document.getElementById('containerBgColor').value,
+        image: document.getElementById('containerBgImage').value || null, // 直接使用图片路径
+        opacity: parseInt(document.getElementById('containerOpacity').value)
+    };
 
-        // 处理背景图片上传
-        const pageBgImage = document.getElementById('pageBgImage').files[0];
-        const containerBgImage = document.getElementById('containerBgImage').files[0];
-
-        if (pageBgImage) {
-            this.convertImageToDataURL(pageBgImage).then(dataURL => {
-                this.styleSettings.background.page.image = dataURL;
-            });
-        }
-
-        if (containerBgImage) {
-            this.convertImageToDataURL(containerBgImage).then(dataURL => {
-                this.styleSettings.background.container.image = dataURL;
-            });
-        }
-
-        this.closeModal('styleSettingsModal');
-        this.applyStylesToPreview();
-    }
+    this.closeModal('styleSettingsModal');
+    this.applyStylesToPreview();
+}
 
     convertImageToDataURL(file) {
         return new Promise((resolve) => {
@@ -566,85 +550,109 @@ class LogEditor {
 
     // 预览功能更新以包含样式
     previewRoom() {
-        const roomData = this.prepareRoomData();
-        const previewWindow = window.open('', '_blank');
-        
-        const stylesHTML = this.generateStyleCSS();
-        
-        previewWindow.document.write(`
-            <html>
-                <head>
-                    <title>预览: ${roomData.title}</title>
-                    <style>${stylesHTML}</style>
-                </head>
-                <body>
-                    <div class="log-container">
-                        <div class="log-header">
-                            <h1 class="log-title">${roomData.title}</h1>
-                            <div class="log-meta">预览模式 | 最后更新: ${new Date(roomData.lastUpdated).toLocaleDateString('zh-CN')}</div>
-                        </div>
-                        <div id="previewMessages"></div>
+    const roomData = this.prepareRoomData();
+    const previewWindow = window.open('', '_blank');
+    
+    const stylesHTML = this.generateStyleCSS(roomData.styleSettings);
+    
+    previewWindow.document.write(`
+        <html>
+            <head>
+                <title>预览: ${roomData.title}</title>
+                <style>${stylesHTML}</style>
+            </head>
+            <body>
+                <div class="log-container">
+                    <div class="log-header">
+                        <h1 class="log-title">${roomData.title}</h1>
+                        <div class="log-meta">预览模式 | 最后更新: ${new Date(roomData.lastUpdated).toLocaleDateString('zh-CN')}</div>
                     </div>
-                    <script>
-                        const messages = ${JSON.stringify(roomData.messages)};
-                        const styleSettings = ${JSON.stringify(roomData.styleSettings)};
-                        const container = document.getElementById('previewMessages');
-                        
-                        // 应用样式
-                        if (styleSettings) {
-                            const bg = styleSettings.background;
-                            if (bg.page.type === 'gradient') {
-                                document.body.style.background = 'linear-gradient(135deg, ' + bg.page.color1 + ' 0%, ' + bg.page.color2 + ' 100%)';
-                            } else if (bg.page.type === 'color') {
-                                document.body.style.background = bg.page.color1;
-                            } else if (bg.page.type === 'image' && bg.page.image) {
-                                document.body.style.backgroundImage = 'url(' + bg.page.image + ')';
-                                document.body.style.backgroundSize = 'cover';
-                            }
-                            
-                            if (bg.container.type === 'color') {
-                                document.querySelector('.log-container').style.background = bg.container.color;
-                            } else if (bg.container.type === 'image' && bg.container.image) {
-                                document.querySelector('.log-container').style.backgroundImage = 'url(' + bg.container.image + ')';
-                                document.querySelector('.log-container').style.backgroundSize = 'cover';
-                            }
-                            document.querySelector('.log-container').style.opacity = (bg.container.opacity || 100) / 100;
+                    <div id="previewMessages"></div>
+                </div>
+                <script>
+                    const messages = ${JSON.stringify(roomData.messages)};
+                    const styleSettings = ${JSON.stringify(roomData.styleSettings)};
+                    const container = document.getElementById('previewMessages');
+                    
+                    // 应用样式
+                    if (styleSettings) {
+                        const bg = styleSettings.background;
+                        if (bg.page.type === 'gradient') {
+                            document.body.style.background = 'linear-gradient(135deg, ' + bg.page.color1 + ' 0%, ' + bg.page.color2 + ' 100%)';
+                        } else if (bg.page.type === 'color') {
+                            document.body.style.background = bg.page.color1;
+                        } else if (bg.page.type === 'image' && bg.page.image) {
+                            document.body.style.backgroundImage = 'url(' + bg.page.image + ')';
+                            document.body.style.backgroundSize = 'cover';
+                            document.body.style.backgroundAttachment = 'fixed';
                         }
                         
-                        // 显示消息
-                        container.innerHTML = messages.map(msg => {
-                            if (msg.type === 'chapter') {
-                                return \`
-                                    <div class="message chapter-message">
-                                        <div class="chapter-title">\${msg.chapter.title}</div>
-                                        \${msg.chapter.description ? \`<div class="chapter-description">\${msg.chapter.description}</div>\` : ''}
-                                    </div>
+                        const logContainer = document.querySelector('.log-container');
+                        if (bg.container.type === 'color') {
+                            logContainer.style.background = bg.container.color;
+                        } else if (bg.container.type === 'image' && bg.container.image) {
+                            logContainer.style.backgroundImage = 'url(' + bg.container.image + ')';
+                            logContainer.style.backgroundSize = 'cover';
+                        }
+                        logContainer.style.opacity = (bg.container.opacity || 100) / 100;
+                        
+                        // 应用频道样式
+                        if (styleSettings.channels) {
+                            const styleElement = document.createElement('style');
+                            let cssRules = '';
+                            Object.entries(styleSettings.channels).forEach(([channelName, settings]) => {
+                                const cleanName = channelName.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase();
+                                cssRules += \`
+                                    .channel-\${cleanName} {
+                                        background-color: \${settings.backgroundColor || 'transparent'};
+                                        opacity: \${(settings.opacity || 100) / 100};
+                                        border-radius: 8px;
+                                        padding: 8px;
+                                        margin: 2px 0;
+                                    }
                                 \`;
-                            }
-                            
-                            const time = new Date(msg.createTime).toLocaleString('zh-CN');
-                            const avatarHTML = msg.character.avatar ? 
-                                \`<img src="\${msg.character.avatar}" class="character-avatar" alt="\${msg.character.name}">\` : '';
-                                
+                            });
+                            styleElement.textContent = cssRules;
+                            document.head.appendChild(styleElement);
+                        }
+                    }
+                    
+                    // 显示消息
+                    container.innerHTML = messages.map(msg => {
+                        if (msg.type === 'chapter') {
                             return \`
-                                <div class="message">
-                                    <div class="message-header">
-                                        \${avatarHTML}
-                                        <span class="character-name" style="color: \${msg.character.color}">
-                                            \${msg.character.name}
-                                        </span>
-                                        <span class="message-time">\${time}</span>
-                                    </div>
-                                    <div class="message-content">\${msg.content}</div>
-                                    \${msg.dice ? \`<div class="dice-result">\${msg.dice.result}</div>\` : ''}
+                                <div class="message chapter-message">
+                                    <div class="chapter-title">\${msg.chapter.title}</div>
+                                    \${msg.chapter.description ? \`<div class="chapter-description">\${msg.chapter.description}</div>\` : ''}
                                 </div>
                             \`;
-                        }).join('');
-                    </script>
-                </body>
-            </html>
-        `);
-    }
+                        }
+                        
+                        const time = new Date(msg.createTime).toLocaleString('zh-CN');
+                        const avatarHTML = msg.character.avatar ? 
+                            \`<img src="\${msg.character.avatar}" class="character-avatar" alt="\${msg.character.name}">\` : '';
+                        
+                        const channelClass = msg.channel ? 'channel-' + msg.channel.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase() : '';
+                            
+                        return \`
+                            <div class="message \${channelClass}">
+                                <div class="message-header">
+                                    \${avatarHTML}
+                                    <span class="character-name" style="color: \${msg.character.color}">
+                                        \${msg.character.name}
+                                    </span>
+                                    <span class="message-time">\${time}</span>
+                                </div>
+                                <div class="message-content">\${msg.content}</div>
+                                \${msg.dice ? \`<div class="dice-result">\${msg.dice.result}</div>\` : ''}
+                            </div>
+                        \`;
+                    }).join('');
+                </script>
+            </body>
+        </html>
+    `);
+}
 
     generateStyleCSS() {
         return `
@@ -809,33 +817,33 @@ class LogEditor {
         return allMessages.sort((a, b) => new Date(a.createTime) - new Date(b.createTime));
     }
 
-    processMessages(messages) {
-        return messages.map(msg => {
-            const fields = msg.fields;
-            return {
-                id: msg.name.split('/').pop(),
-                createTime: msg.createTime,
-                updateTime: msg.updateTime,
-                character: {
-                    name: fields.name?.stringValue || '未知',
-                    color: fields.color?.stringValue || '#666666',
-                    from: fields.from?.stringValue,
-                    avatar: fields.iconUrl?.stringValue || null
-                },
-                content: fields.text?.stringValue || '',
-                type: fields.type?.stringValue,
-                channel: fields.channelName?.stringValue,
-                isEdited: fields.edited?.booleanValue,
-                isPrivate: !!fields.to?.stringValue,
-                dice: fields.extend?.mapValue?.fields?.roll ? {
-                    result: fields.extend.mapValue.fields.roll.mapValue.fields.result?.stringValue,
-                    success: fields.extend.mapValue.fields.roll.mapValue.fields.success?.booleanValue,
-                    critical: fields.extend.mapValue.fields.roll.mapValue.fields.critical?.booleanValue,
-                    fumble: fields.extend.mapValue.fields.roll.mapValue.fields.fumble?.booleanValue
-                } : null
-            };
-        });
-    }
+processMessages(messages) {
+    return messages.map(msg => {
+        const fields = msg.fields;
+        return {
+            id: msg.name.split('/').pop(),
+            createTime: msg.createTime,
+            updateTime: msg.updateTime,
+            character: {
+                name: fields.name?.stringValue || '未知',
+                color: fields.color?.stringValue || '#666666',
+                from: fields.from?.stringValue,
+                avatar: fields.iconUrl?.stringValue || null
+            },
+            content: fields.text?.stringValue || '',
+            type: fields.type?.stringValue,
+            channel: fields.channelName?.stringValue || 'main', // 使用 channelName，默认为 main
+            isEdited: fields.edited?.booleanValue,
+            isPrivate: !!fields.to?.stringValue,
+            dice: fields.extend?.mapValue?.fields?.roll ? {
+                result: fields.extend.mapValue.fields.roll.mapValue.fields.result?.stringValue,
+                success: fields.extend.mapValue.fields.roll.mapValue.fields.success?.booleanValue,
+                critical: fields.extend.mapValue.fields.roll.mapValue.fields.critical?.booleanValue,
+                fumble: fields.extend.mapValue.fields.roll.mapValue.fields.fumble?.booleanValue
+            } : null
+        };
+    });
+}
 
     updateStats() {
         const statsElement = document.getElementById('statsInfo');
