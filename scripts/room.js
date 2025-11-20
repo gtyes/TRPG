@@ -1,22 +1,20 @@
 class RoomViewer {
-constructor() {
-    this.roomData = null;
-    this.appSettings = null;
-    this.initialize();
-}
-
-async initialize() {
-    const roomId = this.getRoomIdFromURL();
-    if (roomId) {
-        await this.loadRoom(roomId);
-        // ↓↓↓ 在 displayRoom 前调用 applyAppSettings ↓↓↓
-        this.applyAppSettings();
-        this.displayRoom();
-        this.setupChapterNavigation();
-    } else {
-        this.showError('未指定房间ID');
+    constructor() {
+        this.roomData = null;
+        this.initialize();
     }
-}
+
+    async initialize() {
+        const roomId = this.getRoomIdFromURL();
+        if (roomId) {
+            await this.loadRoom(roomId);
+            this.applyStyleSettings();
+            this.displayRoom();
+            this.generateTableOfContents();
+        } else {
+            this.showError('未指定房间ID');
+        }
+    }
 
     getRoomIdFromURL() {
         // 支持两种URL格式：
@@ -28,54 +26,82 @@ async initialize() {
 
     async loadRoom(roomId) {
         try {
-            console.log('正在加载房间:', roomId);
             const response = await fetch(`data/${roomId}-edited.json`);
-            
-            if (!response.ok) {
-                throw new Error(`HTTP错误: ${response.status}`);
-            }
-            
+            if (!response.ok) throw new Error(`HTTP错误: ${response.status}`);
             this.roomData = await response.json();
-            this.appSettings = this.roomData.appSettings || {};
-            console.log('房间数据加载成功:', this.roomData);
-            
         } catch (error) {
-            console.error('加载房间失败:', error);
             this.showError(`加载失败: ${error.message}`);
         }
     }
-// 在 displayRoom 方法调用前添加新方法
-applyAppSettings() {
-    if (!this.appSettings) return;
 
-    // 应用页面背景
-    if (this.appSettings.pageBackground) {
-        if (this.appSettings.pageBackground.type === 'gradient') {
-            document.body.style.background = `linear-gradient(135deg, ${this.appSettings.pageBackground.color1} 0%, ${this.appSettings.pageBackground.color2} 100%)`;
-        } else {
-            document.body.style.background = this.appSettings.pageBackground.color1;
-        }
+    applyStyleSettings() {
+        if (!this.roomData.styleSettings) return;
+
+        const bg = this.roomData.styleSettings.background;
         
-        if (this.appSettings.pageBackground.image) {
-            document.body.style.backgroundImage = `url(${this.appSettings.pageBackground.image})`;
+        // 应用页面背景
+        if (bg.page.type === 'gradient') {
+            document.body.style.background = `linear-gradient(135deg, ${bg.page.color1} 0%, ${bg.page.color2} 100%)`;
+        } else if (bg.page.type === 'color') {
+            document.body.style.background = bg.page.color1;
+        } else if (bg.page.type === 'image' && bg.page.image) {
+            document.body.style.backgroundImage = `url(${bg.page.image})`;
             document.body.style.backgroundSize = 'cover';
-            document.body.style.backgroundPosition = 'center';
+            document.body.style.backgroundAttachment = 'fixed';
+        }
+
+        // 应用容器背景
+        const container = document.querySelector('.log-container');
+        if (bg.container.type === 'color') {
+            container.style.background = bg.container.color;
+        } else if (bg.container.type === 'image' && bg.container.image) {
+            container.style.backgroundImage = `url(${bg.container.image})`;
+            container.style.backgroundSize = 'cover';
+        }
+        container.style.opacity = (bg.container.opacity || 100) / 100;
+
+        // 应用频道样式
+        this.applyChannelStyles();
+    }
+
+    applyChannelStyles() {
+        // 在实际实现中，可以根据消息的channel字段应用不同的样式
+        // 这里需要根据你的具体需求来实现
+    }
+
+    generateTableOfContents() {
+        const chapters = this.roomData.messages.filter(msg => msg.type === 'chapter');
+        if (chapters.length === 0) return;
+
+        const toc = document.createElement('div');
+        toc.className = 'table-of-contents';
+        toc.innerHTML = `
+            <h3>📑 章节目录</h3>
+            <ul>
+                ${chapters.map((chapter, index) => `
+                    <li>
+                        <a href="#chapter-${index}" onclick="roomViewer.scrollToChapter(${index})">
+                            ${chapter.chapter.title}
+                        </a>
+                    </li>
+                `).join('')}
+            </ul>
+        `;
+
+        const container = document.querySelector('.log-container');
+        container.insertBefore(toc, container.firstChild);
+    }
+
+    scrollToChapter(chapterIndex) {
+        const chapters = this.roomData.messages.filter(msg => msg.type === 'chapter');
+        if (chapters[chapterIndex]) {
+            const chapterElement = document.querySelectorAll('.chapter-message')[chapterIndex];
+            if (chapterElement) {
+                chapterElement.scrollIntoView({ behavior: 'smooth' });
+            }
         }
     }
 
-    // 应用日志容器样式
-    if (this.appSettings.logContainer) {
-        const logContainer = document.querySelector('.log-container');
-        if (logContainer) {
-            let background = this.appSettings.logContainer.backgroundColor;
-            if (this.appSettings.logContainer.backgroundImage) {
-                background = `linear-gradient(rgba(255,255,255,${this.appSettings.logContainer.opacity}), rgba(255,255,255,${this.appSettings.logContainer.opacity})), url(${this.appSettings.logContainer.backgroundImage})`;
-            }
-            logContainer.style.background = background;
-            logContainer.style.backgroundSize = 'cover';
-        }
-    }
-}
     displayRoom() {
         if (!this.roomData) return;
 
@@ -170,38 +196,9 @@ applyAppSettings() {
         `;
     }
 }
-createChapterSidebar() {
-    const chapters = this.roomData.messages?.filter(msg => msg.isChapter) || [];
-    if (chapters.length === 0) return;
 
-    const sidebar = document.createElement('div');
-    sidebar.className = 'chapter-sidebar';
-    sidebar.innerHTML = `
-        <h4>📑 章节导航</h4>
-        ${chapters.map(chapter => `
-            <a href="#chapter-${chapter.id}" class="chapter-link">
-                ${chapter.chapterData.title}
-            </a>
-        `).join('')}
-    `;
-
-    document.querySelector('.log-container').prepend(sidebar);
-}
-
-setupChapterNavigation() {
-    // 平滑滚动到章节
-    document.addEventListener('click', (e) => {
-        if (e.target.classList.contains('chapter-link')) {
-            e.preventDefault();
-            const targetId = e.target.getAttribute('href').substring(1);
-            const targetElement = document.getElementById(targetId);
-            if (targetElement) {
-                targetElement.scrollIntoView({ behavior: 'smooth' });
-            }
-        }
-    });
-}
 // 初始化
+let roomViewer;
 document.addEventListener('DOMContentLoaded', () => {
     new RoomViewer();
 });
